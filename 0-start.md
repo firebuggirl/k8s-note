@@ -310,11 +310,58 @@ https://academy.learnk8s.io/02k8s-js-cloud
 
 - `docs` => https://eksctl.io/usage/creating-and-managing-clusters/
 
- `eksctl create cluster --region=us-west-2 --name=knote`//takes around 15 minutes => timed out...not working!!
+ `eksctl create cluster --region=us-west-2 --name=knote`//takes around 15 minutes => timed out...not working!! => https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-creation-errors/
+
+   - How can I get my worker nodes to join my Amazon EKS cluster?
+
+     https://aws.amazon.com/premiumsupport/knowledge-center/eks-worker-nodes-cluster/
+
+## Solution!!
+
+- `NOTE`:
+
+      - Important!! 
+       
+         - https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html 
+       
+         - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#sts-regions-activate-deactivate
+        
+      - Make sure that the `AWS Security Token Service (STS) endpoint` for the `Region` that your cluster is in is `enabled` for your account. ``If the endpoint is not enabled`, then `nodes will fail to join the cluster during cluster creation`. For more information, see `Activating and deactivating AWS STS in an AWS Region` => https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#sts-regions-activate-deactivate.
+     
+     ```yaml
+     kubectl get pods -n kube-system -o wide
+
+     kubectl describe pod yourPodName -n kube-system
+
+     kubectl logs <pod-name>    
+      
+     # make sure contains the right role arn given by the cloudformation output
+     kubectl get cm -n kube-system aws-auth -o yaml
+
+     kubectl describe daemonset aws-node -n kube-system
+
+     # Confirm that the versions of aws-node and kube-proxy are compatible with the cluster version => https://aws.amazon.com/premiumsupport/knowledge-center/eks-node-status-ready/
+     kubectl describe daemonset aws-node --namespace kube-system | grep Image | cut -d "/" -f 2
+
+     # Updating control plane versionhttps://eksctl.io/usage/cluster-upgrade/
+     eksctl upgrade cluster --name=<clusterName>
+
+     # Upgrading nodegroups
+     # Get the name of old nodegroup:
+     eksctl get nodegroups --cluster=<clusterName>
+
+     # Create new nodegroup:
+     eksctl create nodegroup --cluster=<clusterName>
+
+     # Delete old nodegroup:
+     eksctl delete nodegroup --cluster=<clusterName> --name=<oldNodeGroupName>
+
+     # Updating default add-ons....
+     ```
 
  - try running default (ie., w/out region..should automatically create cluster in my/your default region):
 
- `eksctl create cluster --name=knote`
+ `eksctl create cluster --name=knote`//works!!
 
  ```yaml
  # https://github.com/weaveworks/eksctl/issues/1482
@@ -395,7 +442,9 @@ https://academy.learnk8s.io/02k8s-js-cloud
 
 ## Clean up
 
-`eksctl delete cluster --region=us-west-2 --name=knote`
+<!-- `eksctl delete cluster --region=us-west-2 --name=knote` -->
+
+`eksctl delete cluster --name=knote`
 
 - double-check that the AWS resources have been deleted in the AWS Console:
 
@@ -439,3 +488,6 @@ https://eksctl.io/usage/spot-instances/
 ## Amazon EC2 Instance Types
 
 https://aws.amazon.com/ec2/instance-types/
+
+
+
